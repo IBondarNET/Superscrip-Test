@@ -19,4 +19,10 @@ public class MarketController : ControllerBase
     {
         await _marketService.BuyAsync(userId, itemId);
     }
+    
+    [HttpGet("/report")]
+    public async Task<ActionResult<List<MarketService.ReportDto>>> GerReportAsync()
+    {
+        return Ok(await _marketService.ReportAsync());
+    }
 }

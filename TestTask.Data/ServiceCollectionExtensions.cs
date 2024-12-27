@@ -9,6 +9,7 @@ public static class ServiceCollectionExtensions
 {
     public static void AddTestDbContext(this IServiceCollection services, IConfiguration configuration)
     {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         services.RegisterConfig<DbConfig>(configuration, nameof(DbConfig));
         services.AddDbContext<TestDbContext>((s, n) =>
             n.UseNpgsql(s.GetRequiredService<DbConfig>().ConnectionString));

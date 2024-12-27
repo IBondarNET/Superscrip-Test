@@ -61,4 +61,73 @@ public class MarketService
             entry.OriginalValues.SetValues(databaseValues);
         }
     }
+
+    public async Task<List<ReportDto>> ReportAsync()
+    {
+        var entity =  _testDbContext.UserItems.GroupBy(t => new
+        {
+            t.UserId,
+            t.ItemId,
+            t.PurchaseDate.Day,
+            t.PurchaseDate.Year
+        }).Select(g => new
+        {
+            g.Key.ItemId,
+            g.Key.Year,
+            Count = g.Count()
+        });
+        
+        var result = await (from e in entity
+            join i in _testDbContext.Items on e.ItemId equals i.Id
+            select new ReportDto
+            {
+                Year = e.Year,
+                ItemName = i.Name,
+                Count = e.Count
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        
+        return result.GroupBy(t => t.Year)
+            .SelectMany(g =>
+                g.OrderByDescending(t => t.Count)
+                    .DistinctBy(x => x.ItemName)
+                    .Take(3))
+            .Select(t => new ReportDto
+            {
+                Year = t.Year,
+                ItemName = t.ItemName,
+                Count = t.Count
+            })
+            .ToList();
+    }
+    
+    public class ReportDto : IEquatable<ReportDto>
+    {
+        public int Year { get; set; }
+        
+        public string ItemName { get; set; } = null!;
+        
+        public int Count { get; set; }
+
+        public bool Equals(ReportDto? other)
+        {
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Year == other.Year && ItemName == other.ItemName && Count == other.Count;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is null) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((ReportDto)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Year, ItemName, Count);
+        }
+    }
 }
